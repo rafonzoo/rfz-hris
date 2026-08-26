@@ -28,9 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full min-w-full flex flex-col typeset typeset-docs max-w-[37em]">
-        {children}
-      </body>
+      <body className="min-h-full min-w-full flex flex-col">{children}</body>
     </html>
   );
 }
