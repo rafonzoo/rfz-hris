@@ -1,0 +1,284 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  // Consider generating into node_modules for simpler imports
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Core Models ---
+
+model User {
+  id            String  @id @default(uuid())
+  name          String
+  email         String  @unique
+  password      String // Ensure this is hashed securely
+  imageUrl      String  @default("")
+  refresh_token String?
+
+  // Unified Messages Sent
+  messages Message[] @relation("SenderMessages")
+
+  // Unified Reactions Given
+  reactions Reaction[]
+
+  // Memberships
+  channelMemberships            ChannelMember[]
+  directConversationMemberships DirectConversationMember[]
+  workspaceMemberships          WorkspaceMember[]
+
+  // Conversations Initiated (mainly for group DMs)
+  createdDirectConversations DirectConversation[] @relation("CreatedConversations")
+
+  // Workspaces Created
+  createdWorkspaces Workspace[] @relation("WorkspaceCreator")
+
+  // Specific DM Statuses (like WhatsApp ticks)
+  directMessageStatuses DirectMessageStatus[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Workspace {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  logoUrl     String?
+
+  // Who created this workspace
+  creatorId String
+  creator   User   @relation("WorkspaceCreator", fields: [creatorId], references: [id])
+
+  // Related entities
+  channels Channel[]
+  members  WorkspaceMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([creatorId])
+  @@index([name]) // For searching workspaces
+}
+
+model WorkspaceMember {
+  id          String   @id @default(uuid())
+  userId      String
+  workspaceId String
+  role        String   @default("MEMBER") // e.g., "ADMIN", "MEMBER", "OWNER"
+  joinedAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId]) // User can only be in a workspace once
+  @@index([userId]) // Find all workspaces for a user
+  @@index([workspaceId]) // Find all users in a workspace
+}
+
+model Channel {
+  id                  String    @id @default(uuid())
+  name                String
+  description         String?
+  isPrivate           Boolean   @default(false)
+  // Denormalized fields for performance - require application logic to update
+  memberCount         Int       @default(0)
+  lastMessageId       String?   @unique
+  lastMessageAt       DateTime?
+  lastMessagePreview  String?   @default("")
+  lastMessageSenderId String?
+
+  // Relation to workspace
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  members     ChannelMember[]
+  messages    Message[]       @relation("ChannelMessages")
+  lastMessage Message?        @relation("LastChannelMessage", fields: [lastMessageId], references: [id], onDelete: SetNull) // Relation for easy fetching
+  // Optional: Track creator?
+  // creatorId String?
+  // creator   User?    @relation("CreatedChannels", fields: [creatorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, name]) // Channel names must be unique within a workspace
+  @@index([name]) // For searching/lookup
+  @@index([lastMessageAt]) // For sorting channel list
+  @@index([createdAt])
+  @@index([workspaceId]) // For finding channels in a workspace
+}
+
+model DirectConversation {
+  id                  String    @id @default(uuid())
+  isGroup             Boolean   @default(false)
+  // Optional: name for group conversations
+  name                String
+  // Optional: group image URL
+  groupImageUrl       String    @default("")
+  // Denormalized fields for performance
+  lastMessageId       String?   @unique
+  lastMessageAt       DateTime?
+  lastMessagePreview  String?   @default("")
+  lastMessageSenderId String?
+
+  // For groups, track who created it
+  creatorId String?
+  creator   User?   @relation("CreatedConversations", fields: [creatorId], references: [id], onDelete: SetNull) // Can be null if creator leaves/is deleted?
+
+  members     DirectConversationMember[]
+  messages    Message[]                  @relation("DirectMessages")
+  lastMessage Message?                   @relation("LastDirectMessage", fields: [lastMessageId], references: [id], onDelete: SetNull) // Relation for easy fetching
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lastMessageAt]) // For sorting conversation list
+  @@index([creatorId])
+}
+
+// --- Unified Message Model ---
+
+model Message {
+  id                   String  @id @default(uuid())
+  content              String  @default("") // Use Text for potentially long messages
+  senderId             String
+  // Context: A message belongs to EITHER a Channel OR a DirectConversation
+  channelId            String?
+  directConversationId String?
+  // Threading: A message can be a reply to another message
+  parentMessageId      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Track edits more explicitly
+  isEdited  Boolean  @default(false) // Can keep if needed, but updatedAt is often sufficient
+
+  // Relations
+  sender User @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade) // Cascade delete if user is deleted? Or SetNull? Choose based on requirements.
+
+  channel            Channel?            @relation("ChannelMessages", fields: [channelId], references: [id], onDelete: Cascade) // If channel deleted, delete messages
+  directConversation DirectConversation? @relation("DirectMessages", fields: [directConversationId], references: [id], onDelete: Cascade) // If conversation deleted, delete messages
+
+  parentMessage Message?  @relation("ThreadReplies", fields: [parentMessageId], references: [id], onDelete: Cascade) // If parent deleted, delete replies
+  replies       Message[] @relation("ThreadReplies") // List of replies to this message
+
+  attachments Attachment[]
+  reactions   Reaction[]
+
+  // Relations for denormalized 'last message' fields
+  lastMessageInChannel            Channel?            @relation("LastChannelMessage")
+  lastMessageInDirectConversation DirectConversation? @relation("LastDirectMessage")
+
+  // Relations for DM status
+  directStatuses DirectMessageStatus[]
+
+  // IMPORTANT: Add a CHECK constraint in the database manually or enforce in application logic
+  // that either channelId OR directConversationId is non-NULL, but not both.
+  // CHECK ((channelId IS NOT NULL AND directConversationId IS NULL) OR (channelId IS NULL AND directConversationId IS NOT NULL))
+
+  // Indexes for common query patterns
+  @@index([senderId])
+  @@index([channelId])
+  @@index([directConversationId])
+  @@index([parentMessageId])
+  @@index([createdAt]) // Crucial for sorting/fetching message history
+  // Compound index useful for fetching messages in context sorted by time
+  @@index([channelId, createdAt])
+  @@index([directConversationId, createdAt])
+  @@index([parentMessageId, createdAt])
+}
+
+// --- Unified Reaction Model ---
+
+model Reaction {
+  id        String @id @default(uuid())
+  emoji     String // Consider limiting length or using specific character set/collation
+  userId    String
+  messageId String
+
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade) // Link to the unified message
+
+  @@unique([userId, messageId, emoji]) // A user can react only once with the same emoji to a message
+  @@index([messageId]) // Find all reactions for a message
+  @@index([userId]) // Find all reactions by a user
+}
+
+// --- Unified Attachment Model ---
+
+model Attachment {
+  id          String @id @default(uuid())
+  url         String // URL to the stored file (e.g., S3 URL)
+  contentType String // MIME type (e.g., 'image/jpeg', 'application/pdf')
+  fileName    String
+  size        Int // Size in bytes
+
+  messageId String // Link to the unified message
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade) // If message deleted, delete attachment record
+
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+}
+
+// --- Membership Join Tables ---
+
+model ChannelMember {
+  id        String   @id @default(uuid())
+  userId    String
+  channelId String
+  joinedAt  DateTime @default(now())
+  // Optional: Role (e.g., ADMIN, MEMBER)
+  // role String @default("MEMBER")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId]) // User can only be in a channel once
+  @@index([userId]) // Find all channels for a user
+  @@index([channelId]) // Find all users in a channel
+}
+
+model DirectConversationMember {
+  id             String   @id @default(uuid())
+  userId         String
+  conversationId String
+  joinedAt       DateTime @default(now())
+  // Optional: Track who added whom in groups?
+  // addedById String?
+  // addedBy User? @relation(...)
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId]) // User can only be in a conversation once
+  @@index([userId]) // Find all conversations for a user
+  @@index([conversationId]) // Find all users in a conversation
+}
+
+// --- Direct Message Status (WhatsApp Style Ticks) ---
+// Specific to Direct Messages for delivery/read status per recipient
+
+model DirectMessageStatus {
+  id          String    @id @default(uuid())
+  messageId   String // Points to the unified Message model
+  userId      String // The recipient user ID
+  deliveredAt DateTime? // Message delivered to user's device
+  readAt      DateTime? // User has read the message
+
+  // NOTE: Application logic MUST ensure this record is only created for
+  // Messages where `directConversationId` is not NULL.
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId]) // One status record per recipient per message
+  @@index([userId, readAt]) // Efficiently find unread messages for a user
+  @@index([messageId]) // Find all statuses for a message (to check if all have read)
+}
