@@ -1,16 +1,20 @@
-import { auth } from "@/auth";
-import { RoutesRedirection } from "@/shared/enum";
-import { redirect } from "next/navigation";
-import { ReactNode } from "react";
+import { auth } from '@/modules/user/user.auth'
+import { RoutesRedirection } from '@/lib/enum'
+import { redirect } from 'next/navigation'
+import type { RC } from '@/lib/types'
 
-export default async function ProtectedLayout({
-  children,
-}: {
-  children?: ReactNode;
-}) {
-  const session = await auth();
+export default async function ProtectedLayout({ children }: RC) {
+  const session = await auth()
   if (!session) {
-    return redirect(RoutesRedirection.Unauthorized);
+    return redirect(RoutesRedirection.Unauthorized)
   }
-  return children;
+  return (
+    <>
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-[320px_1fr]">
+        <aside className='hidden md:flex md:flex-col'>sad</aside>
+        <main>{children}</main>
+      </div>
+      <nav className="sticky h-11 md:hidden flex w-full items-center">nav</nav>
+    </>
+  )
 }

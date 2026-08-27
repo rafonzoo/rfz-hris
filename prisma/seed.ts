@@ -1,9 +1,9 @@
 // prisma/seed.ts
 
-import type { User } from "../../node_modules/.prisma/client";
+import type { User } from "../node_modules/.prisma/client";
 
 import { hash } from "bcrypt";
-import { prisma } from "@/server/prisma";
+import { prisma } from "@/prisma";
 
 async function main(): Promise<void> {
   try {

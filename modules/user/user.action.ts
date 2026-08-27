@@ -1,7 +1,7 @@
 "use server";
 
-import { signIn } from "@/auth";
-import { Routes, RoutesRedirection } from "@/shared/enum";
+import { signIn } from "@/modules/user/user.auth";
+import { Routes, RoutesRedirection } from "@/lib/enum";
 import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";

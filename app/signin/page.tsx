@@ -1,6 +1,6 @@
-import { auth } from "@/auth";
-import { verifyUser } from "@/server/api/user";
-import { RoutesRedirection } from "@/shared/enum";
+import { auth } from "@/modules/user/user.auth";
+import { verifyUser } from "@/modules/user/user.action";
+import { RoutesRedirection } from "@/lib/enum";
 import { redirect } from "next/navigation";
 
 export default async function SigninPage() {

@@ -6,7 +6,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       credentials: { email: {}, password: {} },
       async authorize(current) {
-        const { prisma } = await import("@/server/prisma");
+        const { prisma } = await import("@/prisma");
         const user = await prisma.user.findUnique({
           where: { email: (current.email as string) ?? "" },
         });

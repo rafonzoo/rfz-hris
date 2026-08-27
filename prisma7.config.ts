@@ -4,10 +4,10 @@ import { env } from "@prisma/prisma7/config";
 import { defineConfig } from "@prisma/prisma7/config";
 
 export default defineConfig({
-  schema: "server/prisma/schema.prisma",
+  schema: "prisma/schema.prisma",
   migrations: {
-    path: "server/prisma/migrations",
-    seed: "tsx server/prisma/seed.ts",
+    path: "prisma/migrations",
+    seed: "tsx prisma/seed.ts",
   },
   datasource: {
     url: env("DATABASE_URL"),
