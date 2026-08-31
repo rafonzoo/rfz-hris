@@ -22,7 +22,6 @@
       "a11y": {
         "recommended": true,
         "noLabelWithoutControl": "off",
-        "useSemanticElements": "off",
         "useKeyWithClickEvents": "off"
       },
       "complexity": {

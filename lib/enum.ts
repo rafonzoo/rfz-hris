@@ -1,8 +1,8 @@
 export enum Routes {
-  Homepage = "/",
-  Signin = "/signin",
-  Register = "/register",
-  Employee = "/employee",
+  Homepage = '/',
+  Signin = '/signin',
+  Register = '/register',
+  Employee = '/employee',
 }
 
 export enum RoutesRedirection {

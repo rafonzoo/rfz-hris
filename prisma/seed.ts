@@ -1,40 +1,40 @@
 // prisma/seed.ts
 /** biome-ignore-all lint/suspicious/noConsole: Seeder required a console */
 
-import { hash } from 'bcrypt';
-import { prisma } from '@/prisma';
-import type { User } from '../node_modules/.prisma/client';
+import type { User } from '../node_modules/.prisma/client'
+import { hash } from 'bcrypt'
+import { prisma } from '@/prisma'
 
 async function main(): Promise<void> {
   try {
-    console.log('Starting database seeding...');
+    console.log('Starting database seeding...')
 
     // Clean up any existing data if needed
-    console.log('Cleaning up existing data...');
-    await cleanup();
+    console.log('Cleaning up existing data...')
+    await cleanup()
 
     // Create users
-    console.log('Creating users...');
+    console.log('Creating users...')
     // Used later
     // const users = await createUsers();
-    await createUsers();
+    await createUsers()
 
-    console.log('Database seeding completed successfully!');
+    console.log('Database seeding completed successfully!')
   } catch (error) {
-    console.error('Error seeding database:', error);
-    throw error;
+    console.error('Error seeding database:', error)
+    throw error
   } finally {
-    await prisma.$disconnect();
+    await prisma.$disconnect()
   }
 }
 
 async function cleanup(): Promise<void> {
   // Delete all existing data in reverse order of dependencies
-  await prisma.user.deleteMany({});
+  await prisma.user.deleteMany({})
 }
 
 async function createUsers(): Promise<User[]> {
-  const passwordHash = await hash('asd', 10);
+  const passwordHash = await hash('asd', 10)
 
   const users = await Promise.all([
     prisma.user.upsert({
@@ -82,18 +82,18 @@ async function createUsers(): Promise<User[]> {
         password: passwordHash,
       },
     }),
-  ]);
+  ])
 
-  console.log(`Created ${users.length} users`);
-  return users;
+  console.log(`Created ${users.length} users`)
+  return users
 }
 
 // Run the seed function
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })
