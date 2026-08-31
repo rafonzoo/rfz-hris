@@ -21,6 +21,7 @@
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.10.0",
     "@prisma/client-runtime-utils": "7.10.0",
+    "@tanstack/react-pacer": "^0.23.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",

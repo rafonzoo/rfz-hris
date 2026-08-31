@@ -1,5 +1,18 @@
+import type {} from 'next-auth/jwt'
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
+
+declare module 'next-auth' {
+  interface Session {
+    uid: string
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    uid?: string
+  }
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -22,9 +35,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        return user
+        return { email: user.email, id: user.id }
       },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.uid = user.id
+      }
+      return token
+    },
+    session({ session, token }) {
+      if (token.uid) {
+        session.uid = token.uid
+      }
+
+      return session
+    },
+  },
   pages: { signIn: '/signin' },
 })

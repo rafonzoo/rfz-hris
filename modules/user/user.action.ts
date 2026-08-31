@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { AuthError } from 'next-auth'
 import { ErrorCode, Routes, RoutesRedirection } from '@/lib/enum'
 import { createResponseError, createResponseSuccess } from '@/lib/utils'
-import { signIn } from '@/modules/user/user.auth'
+import { auth, signIn } from '@/modules/user/user.auth'
 import { prisma } from '@/prisma'
 
 export async function verifyUser(formData: FormData) {
@@ -20,15 +20,26 @@ export async function verifyUser(formData: FormData) {
   }
 }
 
-export async function getUserEmployee(email?: string) {
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: { employee: true },
-  })
+/**
+ * @param shouldRedirect boolean (default true)
+ * @returns
+ */
+export async function getCurrentEmployee(shouldRedirect = true) {
+  const session = await auth()
+  if (!session) {
+    if (shouldRedirect) {
+      return redirect(Routes.Signin)
+    }
 
-  if (!user) {
     return createResponseError(ErrorCode.UserNotFound)
   }
+  const employee = await prisma.employee.findUnique({
+    where: { userId: session.uid },
+  })
 
-  return createResponseSuccess(user)
+  if (!employee) {
+    return createResponseError(ErrorCode.EmployeeNotFound)
+  }
+
+  return createResponseSuccess(employee)
 }
