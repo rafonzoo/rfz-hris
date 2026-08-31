@@ -1,27 +1,27 @@
 // prisma/seed.ts
+/** biome-ignore-all lint/suspicious/noConsole: Seeder required a console */
 
-import type { User } from "../node_modules/.prisma/client";
-
-import { hash } from "bcrypt";
-import { prisma } from "@/prisma";
+import { hash } from 'bcrypt';
+import { prisma } from '@/prisma';
+import type { User } from '../node_modules/.prisma/client';
 
 async function main(): Promise<void> {
   try {
-    console.log("Starting database seeding...");
+    console.log('Starting database seeding...');
 
     // Clean up any existing data if needed
-    console.log("Cleaning up existing data...");
+    console.log('Cleaning up existing data...');
     await cleanup();
 
     // Create users
-    console.log("Creating users...");
+    console.log('Creating users...');
     // Used later
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const users = await createUsers();
+    // const users = await createUsers();
+    await createUsers();
 
-    console.log("Database seeding completed successfully!");
+    console.log('Database seeding completed successfully!');
   } catch (error) {
-    console.error("Error seeding database:", error);
+    console.error('Error seeding database:', error);
     throw error;
   } finally {
     await prisma.$disconnect();
@@ -34,51 +34,51 @@ async function cleanup(): Promise<void> {
 }
 
 async function createUsers(): Promise<User[]> {
-  const passwordHash = await hash("asd", 10);
+  const passwordHash = await hash('asd', 10);
 
   const users = await Promise.all([
     prisma.user.upsert({
-      where: { email: "alice@mail.com" },
+      where: { email: 'alice@mail.com' },
       update: {},
       create: {
-        name: "Alice Johnson",
-        email: "alice@mail.com",
+        name: 'Alice Johnson',
+        email: 'alice@mail.com',
         password: passwordHash,
       },
     }),
     prisma.user.upsert({
-      where: { email: "bob@mail.com" },
+      where: { email: 'bob@mail.com' },
       update: {},
       create: {
-        name: "Bob Smith",
-        email: "bob@mail.com",
+        name: 'Bob Smith',
+        email: 'bob@mail.com',
         password: passwordHash,
       },
     }),
     prisma.user.upsert({
-      where: { email: "charlie@mail.com" },
+      where: { email: 'charlie@mail.com' },
       update: {},
       create: {
-        name: "Charlie Davis",
-        email: "charlie@mail.com",
+        name: 'Charlie Davis',
+        email: 'charlie@mail.com',
         password: passwordHash,
       },
     }),
     prisma.user.upsert({
-      where: { email: "dana@mail.com" },
+      where: { email: 'dana@mail.com' },
       update: {},
       create: {
-        name: "Dana Lee",
-        email: "dana@mail.com",
+        name: 'Dana Lee',
+        email: 'dana@mail.com',
         password: passwordHash,
       },
     }),
     prisma.user.upsert({
-      where: { email: "evan@mail.com" },
+      where: { email: 'evan@mail.com' },
       update: {},
       create: {
-        name: "Evan Wilson",
-        email: "evan@mail.com",
+        name: 'Evan Wilson',
+        email: 'evan@mail.com',
         password: passwordHash,
       },
     }),
