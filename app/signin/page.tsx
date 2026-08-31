@@ -1,12 +1,12 @@
-import { auth } from "@/modules/user/user.auth";
-import { verifyUser } from "@/modules/user/user.action";
-import { RoutesRedirection } from "@/lib/enum";
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation'
+import { RoutesRedirection } from '@/lib/enum'
+import { verifyUser } from '@/modules/user/user.action'
+import { auth } from '@/modules/user/user.auth'
 
 export default async function SigninPage() {
-  const session = await auth();
+  const session = await auth()
   if (session) {
-    return redirect(RoutesRedirection.Authorized);
+    return redirect(RoutesRedirection.Authorized)
   }
   return (
     <form action={verifyUser}>
@@ -18,7 +18,7 @@ export default async function SigninPage() {
         Password
         <input name="password" type="password" autoComplete="off" />
       </label>
-      <button>Sign In</button>
+      <button type="submit">Sign In</button>
     </form>
-  );
+  )
 }
