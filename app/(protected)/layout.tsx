@@ -1,12 +1,17 @@
 import type { RC } from '@/lib/types'
-import { redirect } from 'next/navigation'
-import { RoutesRedirection } from '@/lib/enum'
+import { RedirectType, redirect } from 'next/navigation'
+import { Routes, RoutesRedirection } from '@/lib/enum'
+import { getUserEmployee } from '@/modules/user/user.action'
 import { auth } from '@/modules/user/user.auth'
 
 export default async function ProtectedLayout({ children }: RC) {
   const session = await auth()
   if (!session) {
     return redirect(RoutesRedirection.Unauthorized)
+  }
+  const { data: user } = await getUserEmployee(session.user?.email ?? void 0)
+  if (!user?.employee) {
+    return redirect(Routes.Onboarding, RedirectType.replace)
   }
   return (
     <>

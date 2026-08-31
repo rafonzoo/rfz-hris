@@ -3,8 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { AuthError } from 'next-auth'
-import { Routes, RoutesRedirection } from '@/lib/enum'
+import { ErrorCode, Routes, RoutesRedirection } from '@/lib/enum'
+import { createResponseError, createResponseSuccess } from '@/lib/utils'
 import { signIn } from '@/modules/user/user.auth'
+import { prisma } from '@/prisma'
 
 export async function verifyUser(formData: FormData) {
   try {
@@ -16,4 +18,17 @@ export async function verifyUser(formData: FormData) {
     }
     throw error
   }
+}
+
+export async function getUserEmployee(email?: string) {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { employee: true },
+  })
+
+  if (!user) {
+    return createResponseError(ErrorCode.UserNotFound)
+  }
+
+  return createResponseSuccess(user)
 }
